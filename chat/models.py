@@ -3,7 +3,7 @@ from django.db import models
 
 
 def upload_thumbnail(instance, filename):
-    path = f'thumbnails/{instance.user.username}'
+    path = f'thumbnails/{instance.username}'
     extension = filename.split('.')[-1]
     if extension:
         path = f'{path}.{extension}'
