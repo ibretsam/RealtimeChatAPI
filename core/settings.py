@@ -35,6 +35,10 @@ REST_FRAMEWORK = {
     )
 }
 
+# Thumbnail upload
+MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+
 # Daphne
 ASGI_APPLICATION = 'core.asgi.application'
 
@@ -43,7 +47,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'host': [{'host': 'localhost', 'port': 6379}]
+            'hosts': [{'host': '127.0.0.1', 'port': 6379}]
         }
     }
 }
@@ -61,7 +65,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'chat.apps.ChatConfig',
+    'chat'
 ]
 
 MIDDLEWARE = [
