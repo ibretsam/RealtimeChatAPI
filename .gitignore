@@ -4,15 +4,10 @@
 
 # ignore the media folder
 media/*
-core/__pycache__/asgi.cpython-312.pyc
-core/__pycache__/settings.cpython-312.pyc
-core/__pycache__/urls.cpython-312.pyc
-chat/__pycache__/models.cpython-312.pyc
-chat/__pycache__/serializers.cpython-312.pyc
-chat/__pycache__/models.cpython-312.pyc
 
 # ignore all files in the migrations folder
 */migrations/*
 
-# ignore all files in core/__pycache__ folder
+# ignore all files in __pycache__ folder
 core/__pycache__/*
+chat/__pycache__/*
