@@ -23,3 +23,15 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_full_name(self, obj):
         return obj.get_full_name()
+
+
+class SearchSerializer(UserSerializer):
+    status = serializers.SerializerMethodField('get_status')
+
+    class Meta:
+        model = User
+        fields = ['id', 'username',
+                  'thumbnail', 'name', 'status']
+
+    def get_status(self, obj):
+        return 'not-connected'

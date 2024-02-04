@@ -1,7 +1,9 @@
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from django.core.files.base import ContentFile
-from .serializers import UserSerializer
+from .serializers import UserSerializer, SearchSerializer
+from django.db.models import Q
+from .models import User
 import base64
 import json
 
@@ -35,6 +37,9 @@ class ChatConsumer(WebsocketConsumer):
         print("receive", json.dumps(data, indent=2))
 
         data_source = data.get('source')
+
+        if data_source == 'search':
+            self.receive_search(data)
 
         if data_source == 'thumbnail':
             self.receive_thumbnail(data)
@@ -75,4 +80,34 @@ class ChatConsumer(WebsocketConsumer):
         self.send(text_data=json.dumps({
             'source': source,
             'data': data
+        }))
+
+    def receive_search(self, data):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            return
+
+        # Get the search query
+        query = data.get('query')
+
+        # Get all users
+        users = UserSerializer(User.objects.filter(
+            Q(username__icontains=query) |
+            # Q(email__icontains=query) |
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query)
+        ).exclude(
+            username=user.username
+        )            # .annotate(
+            #     pending_them=Q(friends__from_user=user, friends__status='pending'),
+            #     pending_me=Q(friends__to_user=user, friends__status='pending'),
+            #     connected=Q(friends__from_user=user, friends__status='accepted')
+
+            # )
+            , many=True)
+
+        # Send the search result to the user
+        self.send(text_data=json.dumps({
+            'source': 'search',
+            'data': SearchSerializer(users.instance, many=True).data
         }))
