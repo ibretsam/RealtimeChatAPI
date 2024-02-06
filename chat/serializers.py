@@ -34,6 +34,12 @@ class SearchSerializer(UserSerializer):
                   'thumbnail', 'name', 'status']
 
     def get_status(self, obj):
+        if (obj.pending_them):
+            return 'pending-them'
+        elif (obj.pending_me):
+            return 'pending-me'
+        elif (obj.connected):
+            return 'connected'
         return 'not-connected'
 
 

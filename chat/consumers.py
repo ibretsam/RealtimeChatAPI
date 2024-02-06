@@ -2,7 +2,7 @@ from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from django.core.files.base import ContentFile
 from .serializers import UserSerializer, SearchSerializer, RequestSerializer
-from django.db.models import Q
+from django.db.models import Q, Exists, OuterRef
 from .models import User, Connection
 import base64
 import json
@@ -49,6 +49,12 @@ class ChatConsumer(WebsocketConsumer):
 
         elif data_source == 'request-connect':
             self.receive_request_connect(data)
+
+        elif data_source == 'request-list':
+            self.receive_request_list(data)
+
+        elif data_source == 'request-accept':
+            self.receive_accept_request(data)
 
     def receive_thumbnail(self, data):
         user = self.scope['user']
@@ -104,13 +110,29 @@ class ChatConsumer(WebsocketConsumer):
             Q(last_name__icontains=query)
         ).exclude(
             username=user.username
-        )            # .annotate(
-            #     pending_them=Q(friends__from_user=user, friends__status='pending'),
-            #     pending_me=Q(friends__to_user=user, friends__status='pending'),
-            #     connected=Q(friends__from_user=user, friends__status='accepted')
-
-            # )
-            , many=True)
+        ).annotate(
+            pending_them=Exists(
+                Connection.objects.filter(
+                    sender=OuterRef('id'),
+                    receiver=user,
+                    accepted=False
+                )
+            ),
+            pending_me=Exists(
+                Connection.objects.filter(
+                    sender=user,
+                    receiver=OuterRef('id'),
+                    accepted=False
+                )
+            ),
+            connected=Exists(
+                Connection.objects.filter(
+                    Q(sender=OuterRef('id'), receiver=user) |
+                    Q(sender=user, receiver=OuterRef('id')),
+                    accepted=True
+                )
+            )
+        ), many=True)
 
         # Send the search result to the user
         self.send(text_data=json.dumps({
@@ -145,3 +167,50 @@ class ChatConsumer(WebsocketConsumer):
 
         # Send the connection request to the receiver
         self.send_group(receiver_username, 'request-connect', serialized.data)
+
+    def receive_request_list(self, data):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            return
+
+        # Get the connection requests
+        requests = Connection.objects.filter(receiver=user, accepted=False)
+
+        # Serialize the connection requests
+        serialized = RequestSerializer(requests, many=True)
+
+        # Send the connection requests to the user
+        self.send(text_data=json.dumps({
+            'source': 'request-list',
+            'data': serialized.data
+        })
+        )
+
+    def receive_accept_request(self, data):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            return
+
+        sender_username = data.get('username')
+
+        try:
+            sender = User.objects.get(username=sender_username)
+        except User.DoesNotExist:
+            return
+
+        connection = Connection.objects.get(
+            sender=sender, receiver=user, accepted=False)
+
+        connection.accepted = True
+        connection.save()
+
+        serialized = RequestSerializer(connection)
+
+        self.send_group(sender_username, 'request-accept', serialized.data)
+
+        self.send_group(user.username, 'request-accept', serialized.data)
+
+        self.send(text_data=json.dumps({
+            'source': 'request-accept',
+            'data': serialized.data
+        }))
