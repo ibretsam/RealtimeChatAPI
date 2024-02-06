@@ -1,9 +1,9 @@
 from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from django.core.files.base import ContentFile
-from .serializers import UserSerializer, SearchSerializer
+from .serializers import UserSerializer, SearchSerializer, RequestSerializer
 from django.db.models import Q
-from .models import User
+from .models import User, Connection
 import base64
 import json
 
@@ -11,11 +11,13 @@ import json
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
         user = self.scope['user']
+        print("connect", user)
         if not user.is_authenticated:
             return
 
         # Save username to use as a group name for this user
         self.username = user.username
+        print(f"{self.username} connected")
 
         # Join this user to a group with their username
         async_to_sync(self.channel_layer.group_add)(
@@ -26,6 +28,7 @@ class ChatConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
+        print("disconnect", close_code)
         # Leave the group
         async_to_sync(self.channel_layer.group_discard)(
             self.username,
@@ -41,8 +44,11 @@ class ChatConsumer(WebsocketConsumer):
         if data_source == 'search':
             self.receive_search(data)
 
-        if data_source == 'thumbnail':
+        elif data_source == 'thumbnail':
             self.receive_thumbnail(data)
+
+        elif data_source == 'request-connect':
+            self.receive_request_connect(data)
 
     def receive_thumbnail(self, data):
         user = self.scope['user']
@@ -111,3 +117,31 @@ class ChatConsumer(WebsocketConsumer):
             'source': 'search',
             'data': SearchSerializer(users.instance, many=True).data
         }))
+
+    def receive_request_connect(self, data):
+        user = self.scope['user']
+        if not user.is_authenticated:
+            return
+
+        # Get the receiver's username
+        receiver_username = data.get('username')
+        try:
+            receiver = User.objects.get(username=receiver_username)
+        except User.DoesNotExist:
+            return
+
+        # Create a connection request
+        connection, _ = Connection.objects.get_or_create(
+            sender=user, receiver=receiver)
+
+        # Serialize the connection request
+        serialized = RequestSerializer(connection)
+
+        #  Send back the connection request to the user
+        self.send(text_data=json.dumps({
+            'source': 'request-connect',
+            'data': serialized.data
+        }))
+
+        # Send the connection request to the receiver
+        self.send_group(receiver_username, 'request-connect', serialized.data)

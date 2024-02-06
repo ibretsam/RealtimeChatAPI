@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User
+from .models import User, Connection
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -35,3 +35,13 @@ class SearchSerializer(UserSerializer):
 
     def get_status(self, obj):
         return 'not-connected'
+
+
+class RequestSerializer(serializers.ModelSerializer):
+    sender = UserSerializer()
+    receiver = UserSerializer()
+
+    class Meta:
+        model = Connection
+        fields = ['id', 'sender', 'receiver', 'accepted']
+        read_only_fields = ['id', 'sender', 'receiver', 'accepted']

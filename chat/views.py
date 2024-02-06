@@ -50,4 +50,5 @@ class RegisterView(APIView):
 
         user = serializer.save()
         user_data = get_auth_for_user(user)
+        print(user_data)
         return Response(user_data)
