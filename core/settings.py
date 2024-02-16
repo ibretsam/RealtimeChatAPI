@@ -56,7 +56,7 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [{'host': 'stingray-app-tvqv8.ondigitalocean.app', 'port': 6379}]
+            'hosts': [{'host': 'redis-17437.c299.asia-northeast1-1.gce.cloud.redislabs.com', 'port': 17437}]
         }
     }
 }
