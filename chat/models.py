@@ -26,3 +26,15 @@ class Connection(models.Model):
 
     def __str__(self):
         return f'{self.sender} -> {self.receiver}'
+
+
+class Message(models.Model):
+    connection = models.ForeignKey(
+        Connection, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(
+        User, related_name='my_messages', on_delete=models.CASCADE)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.sender} -> ({self.connection.sender} & {self.connection.receiver}): {self.content}'
