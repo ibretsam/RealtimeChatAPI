@@ -125,14 +125,7 @@ environ.Env.read_env()
 
 if DEVELOPMENT_MODE is True:
     DATABASES = {
-        "default": {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': env('DB_NAME'),
-            'USER': env('DB_USER'),
-            'PASSWORD': env('DB_PASSWORD'),
-            'HOST': env('DB_HOST'),
-            'PORT': env('DB_PORT'),
-        }
+        "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
     }
 elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
     if os.getenv("DATABASE_URL", None) is None:
