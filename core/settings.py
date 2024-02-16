@@ -56,7 +56,11 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [{'host': 'redis-17437.c299.asia-northeast1-1.gce.cloud.redislabs.com', 'port': 17437}]
+            'hosts': [{
+                'host': 'redis-17437.c299.asia-northeast1-1.gce.cloud.redislabs.com', 
+                'port': 17437,
+                'password': os.getenv("REDIS_PASSWORD")
+            }]
         }
     }
 }
