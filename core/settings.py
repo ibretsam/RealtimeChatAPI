@@ -33,7 +33,8 @@ DEBUG = os.getenv("DEBUG", "False") == "True"
 
 DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2']
+# Allow all host
+ALLOWED_HOSTS = ['*']
 
 AUTH_USER_MODEL = 'chat.User'
 
