@@ -2,8 +2,8 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-def upload_thumbnail(instance, filename):
-    path = f'thumbnails/{instance.username}'
+def upload_thumbnail(instance, filename):    
+    path = f'staticfiles/thumbnails/{instance.username}'
     extension = filename.split('.')[-1]
     if extension:
         path = f'{path}.{extension}'
