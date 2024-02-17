@@ -2,7 +2,7 @@ from channels.generic.websocket import WebsocketConsumer
 from asgiref.sync import async_to_sync
 from django.core.files.base import ContentFile
 from .serializers import UserSerializer, SearchSerializer, RequestSerializer, FriendSerializer, MessageSerializer
-from django.db.models import Q, Exists, OuterRef
+from django.db.models import Q, Exists, OuterRef, Subquery
 from .models import User, Connection, Message
 import base64
 import json
@@ -242,11 +242,19 @@ class ChatConsumer(WebsocketConsumer):
         user = self.scope['user']
         if not user.is_authenticated:
             return
+        
+        last_message = Message.objects.filter(
+            connection=OuterRef('id')
+        ).order_by('-created_at')
 
         friends = Connection.objects.filter(
             Q(sender=user) | Q(receiver=user),
             accepted=True
-        ).order_by('-updated_at')
+        ).annotate(
+            last_message_updated_at=Subquery(
+                last_message.values('created_at')[:1]
+            )
+        ).order_by('-last_message_updated_at')
 
         serialized = FriendSerializer(
             friends, context={'user': user}, many=True)

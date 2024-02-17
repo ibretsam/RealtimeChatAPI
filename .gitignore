@@ -14,3 +14,5 @@ chat/__pycache__/*
 core/.env
 realtimechat
 realtimechat.pub
+.DS_Store
+core/settings_debug (DO NOT COMMIT THIS FILE).py
