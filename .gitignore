@@ -12,3 +12,5 @@ media/*
 core/__pycache__/*
 chat/__pycache__/*
 core/.env
+realtimechat
+realtimechat.pub
