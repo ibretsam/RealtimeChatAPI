@@ -18,6 +18,10 @@ import sys
 import dj_database_url
 from django.core.management.utils import get_random_secret_key
 
+# Initialise environment variables
+env = environ.Env()
+environ.Env.read_env()
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -29,9 +33,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", get_random_secret_key())
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = False
 
-DEVELOPMENT_MODE = os.getenv("DEVELOPMENT_MODE", "False") == "True"
+DEVELOPMENT_MODE = False
 
 # Allow all host
 ALLOWED_HOSTS = ['*']
@@ -59,7 +63,7 @@ CHANNEL_LAYERS = {
             'hosts': [{
                 'host': 'redis-17437.c299.asia-northeast1-1.gce.cloud.redislabs.com', 
                 'port': 17437,
-                'password': os.getenv("REDIS_PASSWORD")
+                'password': os.getenv("REDIS_PASSWORD", env('REDIS_PASSWORD'))
             }]
         }
     }
@@ -119,13 +123,16 @@ WSGI_APPLICATION = 'core.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-# # Initialise environment variables
-env = environ.Env()
-environ.Env.read_env()
-
 if DEVELOPMENT_MODE is True:
     DATABASES = {
-        "default": dj_database_url.parse(os.environ.get("DATABASE_URL")),
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': env('DB_NAME'),
+            'USER': env('DB_USER'),
+            'PASSWORD': env('DB_PASSWORD'),
+            'HOST': env('DB_HOST'),
+            'PORT': env('DB_PORT'),
+        },
     }
 elif len(sys.argv) > 0 and sys.argv[1] != 'collectstatic':
     if os.getenv("DATABASE_URL", None) is None:
