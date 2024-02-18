@@ -61,7 +61,7 @@ ssl_context.check_hostname = False
 
 redis_host = {
     'address': (os.getenv('REDIS_HOST', env('REDIS_HOST'))),
-    'ssl': ssl_context,
+    # 'ssl': ssl_context,
 }
 
 # Channels
