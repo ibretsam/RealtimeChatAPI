@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import ssl
 import environ
 import os
 import sys
@@ -55,16 +56,20 @@ MEDIA_URL = '/media/'
 # Daphne
 ASGI_APPLICATION = 'core.asgi.application'
 
+ssl_context = ssl.SSLContext()
+ssl_context.check_hostname = False
+
+redis_host = {
+    'address': (os.getenv('REDIS_HOST', 'localhost'), 6379),
+    # 'ssl': ssl_context,
+}
+
 # Channels
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            'hosts': [{
-                'host': 'redis-17437.c299.asia-northeast1-1.gce.cloud.redislabs.com', 
-                'port': 17437,
-                'password': os.getenv("REDIS_PASSWORD")
-            }]
+            'hosts': (redis_host,)
         }
     }
 }
