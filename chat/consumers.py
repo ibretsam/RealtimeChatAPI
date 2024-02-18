@@ -4,8 +4,13 @@ from django.core.files.base import ContentFile
 from .serializers import UserSerializer, SearchSerializer, RequestSerializer, FriendSerializer, MessageSerializer
 from django.db.models import Q, Exists, OuterRef, Subquery
 from .models import User, Connection, Message
+from PIL import Image
+import os
+import environ
+import io
 import base64
 import json
+import boto3
 
 
 class ChatConsumer(WebsocketConsumer):
@@ -75,11 +80,43 @@ class ChatConsumer(WebsocketConsumer):
 
         # Convert base64 data to image
         image_str = data.get('base64')
-        image = ContentFile(base64.b64decode(image_str))
+        image_data = base64.b64decode(image_str)
+        image = Image.open(io.BytesIO(image_data))
+
+        # Convert back to base64 with reduced quality
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG", quality=20) 
+        
+        # Convert back to bytes
+        image_byte = buffered.getvalue()
 
         # Save the image to the user's thumbnail field
         filename = data.get('filename')
-        user.thumbnail.save(filename, image, save=True)
+        
+        session = boto3.Session(
+            aws_access_key_id=os.getenv('CDN_ACCESS_KEY'),
+            aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY'),
+            region_name='sgp1'
+        )
+        
+        client = session.client('s3', 
+                                endpoint_url='https://sgp1.digitaloceanspaces.com', 
+                                config=boto3.session.Config(signature_version='s3v4'), 
+                                region_name='sgp1',
+                                aws_access_key_id=os.getenv('CDN_ACCESS_KEY'),
+                                aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY'))
+        
+        # Define the path
+        path = f"media/user/{user.username}/profile_picture/{filename}"
+
+        client.put_object(Bucket='tahcemitlaer', Key=path,
+                        Body=image_byte, ACL='public-read')
+
+        image_cdn_url = "https://tahcemitlaer.sgp1.cdn.digitaloceanspaces.com/" + path
+
+        user.thumbnail = image_cdn_url
+
+        user.save()
 
         # Serialize the user
         serialized = UserSerializer(user)

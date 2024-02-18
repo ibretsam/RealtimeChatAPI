@@ -16,3 +16,4 @@ realtimechat
 realtimechat.pub
 .DS_Store
 core/settings_debug (DO NOT COMMIT THIS FILE).py
+chat/.env
