@@ -55,6 +55,8 @@ MEDIA_URL = '/media/'
 # Daphne
 ASGI_APPLICATION = 'core.asgi.application'
 
+print("REDIS_PASSWORD: ", os.getenv("REDIS_PASSWORD"))
+
 # Channels
 CHANNEL_LAYERS = {
     'default': {
