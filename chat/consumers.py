@@ -106,6 +106,9 @@ class ChatConsumer(WebsocketConsumer):
                                 aws_access_key_id=os.getenv('CDN_ACCESS_KEY'),
                                 aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY'))
         
+        print("CDN_ACCESS_KEY: ", os.getenv('CDN_ACCESS_KEY'))
+        print("CDN_SECRET_ACCESS_KEY: ", os.getenv('CDN_SECRET_ACCESS_KEY'))
+        
         # Define the path
         path = f"media/user/{user.username}/profile_picture/{filename}"
 
