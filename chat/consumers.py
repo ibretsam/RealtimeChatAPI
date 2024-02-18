@@ -93,9 +93,12 @@ class ChatConsumer(WebsocketConsumer):
         # Save the image to the user's thumbnail field
         filename = data.get('filename')
         
+        env = environ.Env()
+        environ.Env.read_env()
+        
         session = boto3.Session(
-            aws_access_key_id=os.getenv('CDN_ACCESS_KEY'),
-            aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY'),
+            aws_access_key_id=os.getenv('CDN_ACCESS_KEY', env('CDN_ACCESS_KEY')),
+            aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY', env('CDN_SECRET_ACCESS_KEY')),
             region_name='sgp1'
         )
         
@@ -103,11 +106,10 @@ class ChatConsumer(WebsocketConsumer):
                                 endpoint_url='https://sgp1.digitaloceanspaces.com', 
                                 config=boto3.session.Config(signature_version='s3v4'), 
                                 region_name='sgp1',
-                                aws_access_key_id=os.getenv('CDN_ACCESS_KEY'),
-                                aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY'))
-        
-        print("CDN_ACCESS_KEY: ", os.getenv('CDN_ACCESS_KEY'))
-        print("CDN_SECRET_ACCESS_KEY: ", os.getenv('CDN_SECRET_ACCESS_KEY'))
+                                aws_access_key_id=os.getenv(
+                                    'CDN_ACCESS_KEY', env('CDN_ACCESS_KEY')),
+                                aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY', env('CDN_SECRET_ACCESS_KEY')),
+        )
         
         # Define the path
         path = f"media/user/{user.username}/profile_picture/{filename}"
