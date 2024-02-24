@@ -4,6 +4,7 @@ from django.core.files.base import ContentFile
 from .serializers import UserSerializer, SearchSerializer, RequestSerializer, FriendSerializer, MessageSerializer
 from django.db.models import Q, Exists, OuterRef, Subquery
 from .models import User, Connection, Message
+from .utils import save_image
 from PIL import Image
 import os
 import environ
@@ -80,46 +81,8 @@ class ChatConsumer(WebsocketConsumer):
 
         # Convert base64 data to image
         image_str = data.get('base64')
-        image_data = base64.b64decode(image_str)
-        image = Image.open(io.BytesIO(image_data))
 
-        # Convert back to base64 with reduced quality
-        buffered = io.BytesIO()
-        image.save(buffered, format="JPEG", quality=20) 
-        
-        # Convert back to bytes
-        image_byte = buffered.getvalue()
-
-        # Save the image to the user's thumbnail field
-        filename = data.get('filename')
-        
-        env = environ.Env()
-        environ.Env.read_env()
-        
-        session = boto3.Session(
-            aws_access_key_id=os.getenv('CDN_ACCESS_KEY', env('CDN_ACCESS_KEY')),
-            aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY', env('CDN_SECRET_ACCESS_KEY')),
-            region_name='sgp1'
-        )
-        
-        client = session.client('s3', 
-                                endpoint_url='https://sgp1.digitaloceanspaces.com', 
-                                config=boto3.session.Config(signature_version='s3v4'), 
-                                region_name='sgp1',
-                                aws_access_key_id=os.getenv(
-                                    'CDN_ACCESS_KEY', env('CDN_ACCESS_KEY')),
-                                aws_secret_access_key=os.getenv('CDN_SECRET_ACCESS_KEY', env('CDN_SECRET_ACCESS_KEY')),
-        )
-        
-        # Define the path
-        path = f"media/user/{user.username}/profile_picture/{filename}"
-
-        client.put_object(Bucket='tahcemitlaer', Key=path,
-                        Body=image_byte, ACL='public-read')
-
-        image_cdn_url = "https://tahcemitlaer.sgp1.cdn.digitaloceanspaces.com/" + path
-
-        user.thumbnail = image_cdn_url
+        user.thumbnail = save_image(image_str, 'thumbnail', user)
 
         user.save()
 
@@ -284,7 +247,7 @@ class ChatConsumer(WebsocketConsumer):
         user = self.scope['user']
         if not user.is_authenticated:
             return
-        
+
         last_message = Message.objects.filter(
             connection=OuterRef('id')
         ).order_by('-created_at')
@@ -314,6 +277,7 @@ class ChatConsumer(WebsocketConsumer):
         print("sender", sender.username)
 
         connection_id = data.get('connectionId')
+        message_type = data.get('message_type')
 
         try:
             connection = Connection.objects.get(id=connection_id)
@@ -324,11 +288,22 @@ class ChatConsumer(WebsocketConsumer):
         content = data.get('message')
         print("content", content)
 
-        message = Message.objects.create(
-            connection=connection,
-            sender=sender,
-            content=content
-        )
+        if message_type == 'image':
+            image_str = data.get('image')
+            image_url = save_image(image_str, 'message',
+                                   sender, connection.receiver)
+            message = Message.objects.create(
+                connection=connection,
+                sender=sender,
+                image_url=image_url,
+                content=content
+            )
+        else:
+            message = Message.objects.create(
+                connection=connection,
+                sender=sender,
+                content=content
+            )
 
         serialized_message = MessageSerializer(message, context={
             'user': sender
