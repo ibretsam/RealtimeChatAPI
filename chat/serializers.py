@@ -87,7 +87,8 @@ class MessageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'created_at', 'is_my_message']
+        fields = ['id', 'sender', 'content',
+                  'image_url', 'created_at', 'is_my_message']
 
     def get_is_my_message(self, obj):
         return obj.sender == self.context['user']

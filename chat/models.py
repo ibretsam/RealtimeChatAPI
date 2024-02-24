@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
-def upload_thumbnail(instance, filename):    
+def upload_thumbnail(instance, filename):
     path = f'staticfiles/thumbnails/{instance.username}'
     extension = filename.split('.')[-1]
     if extension:
@@ -33,6 +33,7 @@ class Message(models.Model):
     sender = models.ForeignKey(
         User, related_name='my_messages', on_delete=models.CASCADE)
     content = models.TextField()
+    image_url = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
